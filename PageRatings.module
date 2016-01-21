@@ -102,6 +102,23 @@ class PageRatingsAccessor
 
         return $this->_current = 0;
     }
+    
+    public function userRating($userId)
+    {
+        $table = PageRatings::table;
+
+        // Select from database
+        $select = wire('database')->prepare("SELECT rating as userRating FROM $table WHERE page_id = ? AND user_id = ? LIMIT 1");
+        $result = $select->execute(array($this->page->id, $userId));
+        
+        if (!$result) return $this->_userRating = 0;
+        
+        if (($set = $select->fetch(PDO::FETCH_ASSOC)) !== false) {
+            return $this->_userRating = $set['userRating'];
+        }
+
+        return $this->_userRating = 0;
+    }
 
     public function count()
     {
@@ -164,6 +181,24 @@ class PageRatingsAccessor
                 $currentDate->format('Y-m-d H:i:s')
             ));
             wire('session')->set("rating_{$this->page->id}", $rating);
+
+            return true;
+        }
+
+        return false;
+    }
+    
+    public function remove($userId)
+    {
+        $table = PageRatings::table;
+
+        if ($userId != '') {
+            $statement = wire('database')->prepare("DELETE FROM $table WHERE (page_id = ? AND user_id = ?)");
+            $statement->execute(array(
+                $this->page->id,
+                $userId
+            ));
+            wire('session')->remove("rating_{$this->page->id}");
 
             return true;
         }
